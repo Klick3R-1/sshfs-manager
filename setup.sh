@@ -56,16 +56,20 @@ if [[ -f "$SETTINGS_CONF" ]]; then
   LOCAL_LINK_DIR="${LOCAL_LINK_DIR:-${HOME}/Mounts}"
 fi
 
-echo "Configure paths  (press Enter to accept the default)"
-echo ""
+if [[ -t 0 ]]; then
+  echo "Configure paths  (press Enter to accept the default)"
+  echo ""
 
-read -rp "  Mount root  [${MOUNT_ROOT}]: " input_mount_root
-[[ -n "$input_mount_root" ]] && MOUNT_ROOT="$input_mount_root"
+  read -rp "  Mount root  [${MOUNT_ROOT}]: " input_mount_root
+  [[ -n "$input_mount_root" ]] && MOUNT_ROOT="$input_mount_root"
 
-read -rp "  Symlink folder  [${MOUNTS_DIR}]: " input_link_dir
-[[ -n "$input_link_dir" ]] && MOUNTS_DIR="$input_link_dir"
+  read -rp "  Symlink folder  [${MOUNTS_DIR}]: " input_link_dir
+  [[ -n "$input_link_dir" ]] && MOUNTS_DIR="$input_link_dir"
 
-echo ""
+  echo ""
+else
+  info "Non-interactive run — using existing/default paths"
+fi
 
 # ── Directories ──────────────────────────────────────────────────────────────
 
