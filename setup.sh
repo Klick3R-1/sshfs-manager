@@ -60,10 +60,19 @@ LOCAL_LINK_DIR="${LOCAL_LINK_DIR:-$MOUNTS_DIR}"
 if [[ -t 0 ]]; then
   echo "Configure paths  (press Enter to accept the default)"
   echo ""
-
+  echo "  Mount root:     where SSHFS mountpoints are created, one subfolder per mount."
+  echo "                  The default /sshfs is outside your home directory so that mounts"
+  echo "                  are not nested inside other tools that watch ~/. It requires sudo"
+  echo "                  to create once. Use a path inside your home dir (e.g. ~/mnt) if"
+  echo "                  you prefer to avoid sudo entirely."
+  echo ""
   read -rp "  Mount root  [${MOUNT_ROOT}]: " input_mount_root
   [[ -n "$input_mount_root" ]] && MOUNT_ROOT="$input_mount_root"
 
+  echo ""
+  echo "  Symlink folder: convenience symlinks pointing to your mounts are created here."
+  echo "                  This makes mounts easy to browse without knowing the full path."
+  echo ""
   read -rp "  Symlink folder  [${LOCAL_LINK_DIR}]: " input_link_dir
   [[ -n "$input_link_dir" ]] && LOCAL_LINK_DIR="$input_link_dir"
 
