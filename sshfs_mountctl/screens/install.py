@@ -214,9 +214,12 @@ class InstallScreen(Screen):
                     log(f"  removed: {MOUNTS_DIR}")
 
             log("")
-            log("Uninstall complete.")
+            log("Uninstall complete. Closing…")
             if not wipe_configs:
                 log("Mount configs kept at ~/.config/sshfs-mounts/")
+            import time; time.sleep(2)
+            self.app.call_from_thread(self.app.exit)
+            return
 
         except Exception as exc:
             logger.debug("uninstall: exception: %s", exc, exc_info=True)
