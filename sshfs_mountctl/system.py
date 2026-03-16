@@ -49,12 +49,16 @@ def load_settings() -> dict[str, str]:
 def save_settings(local_link_dir: str, mount_root: str,
                   notifications_enabled: bool = False) -> None:
     MOUNTS_DIR.mkdir(parents=True, exist_ok=True)
-    notif = 1 if notifications_enabled else 0
-    SETTINGS_FILE.write_text(
-        f'LOCAL_LINK_DIR="{local_link_dir}"\n'
-        f'MOUNT_ROOT="{mount_root}"\n'
-        f'NOTIFICATIONS_ENABLED={notif}\n'
-    )
+    # Read-modify-write so unknown keys added by future versions are preserved
+    current = load_settings()
+    current["LOCAL_LINK_DIR"] = local_link_dir
+    current["MOUNT_ROOT"] = mount_root
+    current["NOTIFICATIONS_ENABLED"] = "1" if notifications_enabled else "0"
+    lines = []
+    for key, val in current.items():
+        # Quote values that contain spaces or are paths
+        lines.append(f'{key}="{val}"\n')
+    SETTINGS_FILE.write_text("".join(lines))
 
 
 def get_local_link_dir() -> Path:
