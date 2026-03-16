@@ -148,6 +148,8 @@ class InstallScreen(Screen):
                     logger.debug("  → rc=%d stderr=%r", r.returncode, r.stderr.strip())
                     if r.returncode != 0:
                         log(f"  ERROR creating {mount_root}: {r.stderr.strip()}")
+                        log(f"  Run manually:  sudo mkdir -p {mount_root} && sudo chown $(id -un) {mount_root}")
+                        log(f"  Then re-open Install to complete setup.")
                         return
 
                     user = pwd.getpwuid(os.getuid()).pw_name
@@ -169,9 +171,10 @@ class InstallScreen(Screen):
             logger.debug("install: exception: %s", exc, exc_info=True)
             log(f"ERROR: {exc}")
 
-        self.app.call_from_thread(
-            lambda: setattr(self.query_one("#back-buttons"), "display", True)
-        )
+        finally:
+            self.app.call_from_thread(
+                lambda: setattr(self.query_one("#back-buttons"), "display", True)
+            )
 
     def _on_uninstall_confirm(self, result: str | None) -> None:
         if result is None:
