@@ -58,7 +58,7 @@ chmod +x sshfs-mountctl
 ./sshfs-mountctl
 ```
 
-The binary bundles Python and all dependencies — no Python or `textual` install needed. **After launching, press Install from the menu** to set up the systemd watchdog service and required directories.
+The binary bundles Python and all dependencies — no Python or `textual` install needed. **On first launch the install prompt appears automatically** — follow it to set up the systemd watchdog service and required directories.
 
 ### Option 3 — Manual
 
@@ -68,6 +68,30 @@ cd ~/sshfs-manager
 pip install --user textual
 bash setup.sh
 source ~/.profile
+```
+
+## Uninstallation
+
+### Via the app
+
+Open the app, go to **Install → Uninstall**. You will be asked whether to keep or delete your mount configs. The app removes all systemd units, the watchdog script, the launcher, and the installed package, then exits.
+
+### Remove dependencies installed by the one-liner
+
+The one-liner may have installed `textual` via pip. To remove it:
+
+```bash
+pip uninstall textual
+```
+
+To also remove `sshfs` and `fuse3`:
+
+```bash
+# Ubuntu / Debian
+sudo apt remove sshfs fuse3
+
+# Arch Linux
+sudo pacman -R sshfs fuse3
 ```
 
 ## Usage
