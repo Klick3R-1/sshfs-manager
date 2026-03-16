@@ -70,6 +70,20 @@ class InstallScreen(Screen):
         sudo_note = "  (may require sudo)" if needs_sudo else ""
         log.write_line(f"  {mount_root}{sudo_note}")
 
+    def on_input_changed(self, event: Input.Changed) -> None:
+        if event.input.id not in ("f_link_dir", "f_mount_root"):
+            return
+        link_dir = self.query_one("#f_link_dir", Input).value.strip() or str(get_local_link_dir())
+        mount_root = self.query_one("#f_mount_root", Input).value.strip() or str(get_mount_root())
+        log = self.query_one(Log)
+        log.clear()
+        for path in [MOUNTS_DIR, SYSTEMD_DIR, HOME / ".bin", link_dir,
+                     UNIT_TEMPLATE, WATCHDOG_DST]:
+            log.write_line(f"  {path}")
+        needs_sudo = not mount_root.startswith(str(HOME))
+        sudo_note = "  (may require sudo)" if needs_sudo else ""
+        log.write_line(f"  {mount_root}{sudo_note}")
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         logger.debug("InstallScreen.on_button_pressed: %r", event.button.id)
         if event.button.id == "btn_cancel":
