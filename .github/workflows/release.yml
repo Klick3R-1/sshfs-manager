@@ -31,11 +31,15 @@ jobs:
 
       - name: Build binary
         run: |
+          cat > _entry.py <<'EOF'
+          from sshfs_mountctl.__main__ import main
+          main()
+          EOF
           pyinstaller \
             --onefile \
             --name sshfs-mountctl \
             --add-data "sshfs_mountctl:sshfs_mountctl" \
-            sshfs_mountctl/__main__.py
+            _entry.py
 
       - name: Create release
         uses: softprops/action-gh-release@v2
