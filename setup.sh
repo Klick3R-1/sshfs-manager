@@ -45,11 +45,43 @@ ok "textual found: $(python3 -c 'import textual; print(textual.__version__)')"
 
 echo ""
 
+# ── Path configuration ────────────────────────────────────────────────────────
+
+# Load existing settings if present so re-runs show current values as defaults
+SETTINGS_CONF="$CFG_DIR/settings.conf"
+if [[ -f "$SETTINGS_CONF" ]]; then
+  # shellcheck disable=SC1090
+  source "$SETTINGS_CONF"
+  MOUNT_ROOT="${MOUNT_ROOT:-/sshfs}"
+  LOCAL_LINK_DIR="${LOCAL_LINK_DIR:-${HOME}/Mounts}"
+fi
+
+echo "Configure paths  (press Enter to accept the default)"
+echo ""
+
+read -rp "  Mount root  [${MOUNT_ROOT}]: " input_mount_root
+[[ -n "$input_mount_root" ]] && MOUNT_ROOT="$input_mount_root"
+
+read -rp "  Symlink folder  [${MOUNTS_DIR}]: " input_link_dir
+[[ -n "$input_link_dir" ]] && MOUNTS_DIR="$input_link_dir"
+
+echo ""
+
 # ── Directories ──────────────────────────────────────────────────────────────
 
 info "Creating directories…"
 mkdir -p "$BIN_DIR" "$LIB_DIR" "$CFG_DIR" "$SYSTEMD_DIR" "$MOUNTS_DIR"
-ok "~/.bin, ~/.local/lib/sshfs-mountctl, ~/.config/sshfs-mounts, ~/Mounts"
+ok "~/.bin, ~/.local/lib/sshfs-mountctl, ~/.config/sshfs-mounts, $MOUNTS_DIR"
+
+# Write settings.conf so the TUI and watchdog pick up the chosen paths
+info "Writing settings.conf…"
+mkdir -p "$CFG_DIR"
+cat > "$SETTINGS_CONF" <<EOF
+LOCAL_LINK_DIR="${MOUNTS_DIR}"
+MOUNT_ROOT="${MOUNT_ROOT}"
+NOTIFICATIONS_ENABLED=0
+EOF
+ok "$SETTINGS_CONF"
 
 # ── Copy package ─────────────────────────────────────────────────────────────
 
