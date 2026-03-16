@@ -83,8 +83,11 @@ class MainMenuScreen(Screen):
 
     def on_mount(self) -> None:
         logger.debug("MainMenuScreen.on_mount")
-        colour = "green" if is_installed() else "yellow"
+        installed = is_installed()
+        colour = "green" if installed else "yellow"
         self.query_one("#install-status", Label).styles.color = colour
+        if not installed:
+            self.app.push_screen(InstallScreen())
         self.query_one(DataTable).add_columns(
             "NAME", "ENABLED", "MOUNTED", "SERVICE", "REMOTE"
         )
