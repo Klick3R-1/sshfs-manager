@@ -24,6 +24,7 @@ from ..constants import (
 )
 from ..logging_ import logger
 from ..system import (
+    _clean_env,
     ensure_bin_in_path,
     get_local_link_dir,
     get_mount_root,
@@ -123,7 +124,7 @@ class InstallScreen(Screen):
                 else:
                     cmd = ["sudo", "mkdir", "-p", str(mount_root)]
                     logger.debug("  run: %s", " ".join(cmd))
-                    r = subprocess.run(cmd, capture_output=True, text=True)
+                    r = subprocess.run(cmd, capture_output=True, text=True, env=_clean_env())
                     logger.debug("  → rc=%d stderr=%r", r.returncode, r.stderr.strip())
                     if r.returncode != 0:
                         log(f"  ERROR creating {mount_root}: {r.stderr.strip()}")
@@ -135,7 +136,7 @@ class InstallScreen(Screen):
                         ["sudo", "chmod", "755", str(mount_root)],
                     ]:
                         logger.debug("  run: %s", " ".join(cmd))
-                        subprocess.run(cmd, capture_output=True)
+                        subprocess.run(cmd, capture_output=True, env=_clean_env())
                     log(f"  {mount_root} owned by {user}")
 
             reload_user_daemon()

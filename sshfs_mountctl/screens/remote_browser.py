@@ -13,6 +13,7 @@ from textual.widgets import Button, DataTable, Label
 from textual import work
 
 from ..logging_ import logger
+from ..system import _clean_env
 
 
 class RemotePathBrowserScreen(ModalScreen):
@@ -69,7 +70,7 @@ class RemotePathBrowserScreen(ModalScreen):
         ]
         logger.debug("RemotePathBrowserScreen._load: cmd=%r", cmd)
         try:
-            r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=15, env=_clean_env())
         except subprocess.TimeoutExpired:
             self.app.call_from_thread(self._show_error, "SSH timed out")
             return
