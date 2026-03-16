@@ -218,6 +218,14 @@ class InstallScreen(Screen):
                     shutil.rmtree(MOUNTS_DIR)
                     log(f"  removed: {MOUNTS_DIR}")
 
+            mount_root = get_mount_root()
+            if mount_root.exists():
+                try:
+                    mount_root.rmdir()
+                    log(f"  removed: {mount_root}")
+                except OSError:
+                    log(f"  skipped: {mount_root}  (not empty)")
+
             log("")
             log("Uninstall complete. Closing…")
             if not wipe_configs:
