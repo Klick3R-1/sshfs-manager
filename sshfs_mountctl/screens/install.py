@@ -37,6 +37,25 @@ from ..system import (
 from .confirm import UninstallConfirmScreen
 from ..validators import AbsolutePathValidator
 
+_TERMINAL_PREFIXES = [
+    ["xterm", "-e"],
+    ["alacritty", "-e"],
+    ["kitty"],
+    ["foot"],
+    ["wezterm", "start", "--"],
+    ["gnome-terminal", "--wait", "--"],
+    ["konsole", "-e"],
+    ["xfce4-terminal", "--hold", "-e"],
+]
+
+
+def _sudo_in_terminal(shell_cmd: str) -> None:
+    """Spawn the first available terminal emulator to run shell_cmd interactively."""
+    for prefix in _TERMINAL_PREFIXES:
+        if shutil.which(prefix[0]):
+            subprocess.run(prefix + ["bash", "-c", shell_cmd], env=_clean_env())
+            return
+
 
 class InstallScreen(Screen):
     BINDINGS = [Binding("escape", "app.pop_screen", "Cancel")]
@@ -142,24 +161,23 @@ class InstallScreen(Screen):
                     mount_root.mkdir(parents=True, exist_ok=True)
                     log(f"  created {mount_root}")
                 else:
-                    cmd = ["sudo", "mkdir", "-p", str(mount_root)]
-                    logger.debug("  run: %s", " ".join(cmd))
-                    r = subprocess.run(cmd, capture_output=True, text=True, env=_clean_env())
-                    logger.debug("  → rc=%d stderr=%r", r.returncode, r.stderr.strip())
-                    if r.returncode != 0:
-                        log(f"  ERROR creating {mount_root}: {r.stderr.strip()}")
+                    user = pwd.getpwuid(os.getuid()).pw_name
+                    shell_cmd = (
+                        f"echo 'Creating {mount_root} — sudo password required' && "
+                        f"sudo mkdir -p {mount_root} && "
+                        f"sudo chown {user}:{user} {mount_root} && "
+                        f"sudo chmod 755 {mount_root} && "
+                        f"echo 'Done!' || echo 'Something went wrong.'; "
+                        f"read -rp 'Press Enter to close…'"
+                    )
+                    log(f"  Opening terminal to create {mount_root}…")
+                    _sudo_in_terminal(shell_cmd)
+                    if not mount_root.exists():
+                        log(f"  ERROR: {mount_root} was not created")
                         log(f"  Run manually:  sudo mkdir -p {mount_root} && sudo chown $(id -un) {mount_root}")
                         log(f"  Then re-open Install to complete setup.")
                         return
-
-                    user = pwd.getpwuid(os.getuid()).pw_name
-                    for cmd in [
-                        ["sudo", "chown", f"{user}:{user}", str(mount_root)],
-                        ["sudo", "chmod", "755", str(mount_root)],
-                    ]:
-                        logger.debug("  run: %s", " ".join(cmd))
-                        subprocess.run(cmd, capture_output=True, env=_clean_env())
-                    log(f"  {mount_root} owned by {user}")
+                    log(f"  created {mount_root}")
 
             reload_user_daemon()
             log("  systemd user daemon reloaded")
