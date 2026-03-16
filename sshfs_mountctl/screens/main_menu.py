@@ -96,6 +96,12 @@ class MainMenuScreen(Screen):
 
     def on_screen_resume(self) -> None:
         logger.debug("MainMenuScreen.on_screen_resume")
+        installed = is_installed()
+        status_text = "✓ Installed" if installed else "✗ Not installed"
+        colour = "green" if installed else "yellow"
+        label = self.query_one("#install-status", Label)
+        label.update(status_text)
+        label.styles.color = colour
         self._load_mounts()
 
     def action_refresh_mounts(self) -> None:
