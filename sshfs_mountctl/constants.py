@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 HOME           = Path.home()
@@ -11,7 +12,8 @@ UNIT_TEMPLATE  = SYSTEMD_DIR / "sshfs-watchdog@.service"
 WATCHDOG_DST   = HOME / ".bin" / "sshfs-watchdog.sh"
 LOCAL_LINK_DIR = HOME / "Mounts"
 MOUNT_ROOT     = Path("/sshfs")
-SCRIPT_DIR     = Path(__file__).resolve().parent.parent   # repo root
+# When running as a PyInstaller bundle, files are extracted to sys._MEIPASS
+SCRIPT_DIR     = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
 WATCHDOG_SRC   = SCRIPT_DIR / "sshfs-watchdog.sh"
 LOG_FILE       = HOME / ".local" / "state" / "sshfs-mountctl" / "debug.log"
 

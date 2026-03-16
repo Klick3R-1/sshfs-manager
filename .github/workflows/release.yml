@@ -39,6 +39,7 @@ jobs:
             --onefile \
             --name sshfs-mountctl \
             --add-data "sshfs_mountctl:sshfs_mountctl" \
+            --add-data "sshfs-watchdog.sh:." \
             _entry.py
 
       - name: Create release
