@@ -208,6 +208,11 @@ class InstallScreen(Screen):
                 shutil.rmtree(lib_dir)
                 log(f"  removed: {lib_dir}")
 
+            share_dir = HOME / ".local" / "share" / "sshfs-mountctl"
+            if share_dir.exists():
+                shutil.rmtree(share_dir)
+                log(f"  removed: {share_dir}")
+
             if wipe_configs:
                 if MOUNTS_DIR.exists():
                     shutil.rmtree(MOUNTS_DIR)
