@@ -1,7 +1,7 @@
 """Screen classes — imported here for convenient access from app.py."""
 
 from .add_mount import AddMountScreen
-from .confirm import BulkRemoveConfirmScreen, RemoveConfirmScreen
+from .confirm import BulkRemoveConfirmScreen, RemoveConfirmScreen, UninstallConfirmScreen
 from .install import InstallScreen
 from .log_viewer import LogViewerScreen
 from .main_menu import MainMenuScreen
@@ -17,5 +17,6 @@ __all__ = [
     "MountSelectorScreen",
     "RemotePathBrowserScreen",
     "RemoveConfirmScreen",
+    "UninstallConfirmScreen",
     "SettingsScreen",
 ]

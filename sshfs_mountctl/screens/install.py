@@ -25,13 +25,16 @@ from ..constants import (
 from ..logging_ import logger
 from ..system import (
     _clean_env,
+    disable_mount_by_name,
     ensure_bin_in_path,
     get_local_link_dir,
     get_mount_root,
+    list_mount_names,
     load_settings,
     reload_user_daemon,
     save_settings,
 )
+from .confirm import UninstallConfirmScreen
 from ..validators import AbsolutePathValidator
 
 
@@ -51,8 +54,9 @@ class InstallScreen(Screen):
                     validators=[AbsolutePathValidator()])
         yield Log(id="install-log", auto_scroll=True)
         with Horizontal(classes="buttons", id="install-buttons"):
-            yield Button("Proceed", variant="primary", id="btn_proceed")
-            yield Button("Cancel",  id="btn_cancel")
+            yield Button("Proceed",   variant="primary", id="btn_proceed")
+            yield Button("Uninstall", variant="error",   id="btn_uninstall")
+            yield Button("Cancel",    id="btn_cancel")
         with Horizontal(classes="buttons", id="back-buttons"):
             yield Button("Back to menu", variant="primary", id="btn_back")
         yield Footer()
@@ -97,6 +101,8 @@ class InstallScreen(Screen):
             save_settings(link_dir, mount_root)
             self.query_one("#install-buttons").display = False
             self._run_install()
+        elif event.button.id == "btn_uninstall":
+            self.app.push_screen(UninstallConfirmScreen(), self._on_uninstall_confirm)
         elif event.button.id == "btn_back":
             self.app.pop_screen()
 
@@ -161,6 +167,59 @@ class InstallScreen(Screen):
 
         except Exception as exc:
             logger.debug("install: exception: %s", exc, exc_info=True)
+            log(f"ERROR: {exc}")
+
+        self.app.call_from_thread(
+            lambda: setattr(self.query_one("#back-buttons"), "display", True)
+        )
+
+    def _on_uninstall_confirm(self, result: str | None) -> None:
+        if result is None:
+            return
+        self.query_one("#install-buttons").display = False
+        self._run_uninstall(result == "wipe")
+
+    @work(thread=True)
+    def _run_uninstall(self, wipe_configs: bool) -> None:
+        logger.debug("InstallScreen._run_uninstall: wipe_configs=%s", wipe_configs)
+
+        def log(msg: str) -> None:
+            logger.debug("uninstall: %s", msg)
+            self.app.call_from_thread(self.query_one(Log).write_line, msg)
+
+        try:
+            log("Stopping and disabling all mounts…")
+            for name in list_mount_names():
+                try:
+                    disable_mount_by_name(name)
+                    log(f"  stopped: {name}")
+                except Exception as exc:
+                    log(f"  warning: could not stop {name}: {exc}")
+
+            reload_user_daemon()
+
+            for path in [UNIT_TEMPLATE, WATCHDOG_DST, HOME / ".bin" / "sshfs-mountctl"]:
+                if path.exists():
+                    path.unlink()
+                    log(f"  removed: {path}")
+
+            lib_dir = HOME / ".local" / "lib" / "sshfs-mountctl"
+            if lib_dir.exists():
+                shutil.rmtree(lib_dir)
+                log(f"  removed: {lib_dir}")
+
+            if wipe_configs:
+                if MOUNTS_DIR.exists():
+                    shutil.rmtree(MOUNTS_DIR)
+                    log(f"  removed: {MOUNTS_DIR}")
+
+            log("")
+            log("Uninstall complete.")
+            if not wipe_configs:
+                log("Mount configs kept at ~/.config/sshfs-mounts/")
+
+        except Exception as exc:
+            logger.debug("uninstall: exception: %s", exc, exc_info=True)
             log(f"ERROR: {exc}")
 
         self.app.call_from_thread(

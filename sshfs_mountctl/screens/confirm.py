@@ -78,3 +78,33 @@ class BulkRemoveConfirmScreen(ModalScreen):
         else:
             logger.debug("BulkRemoveConfirmScreen: cancelled")
             self.dismiss(None)
+
+
+class UninstallConfirmScreen(ModalScreen):
+    def compose(self):
+        with Vertical():
+            yield Label("[bold]Uninstall sshfs-mountctl?[/bold]")
+            yield Rule()
+            yield Label("This will remove:")
+            yield Label("  systemd unit template")
+            yield Label("  ~/.bin/sshfs-watchdog.sh")
+            yield Label("  ~/.bin/sshfs-mountctl")
+            yield Label("  ~/.local/lib/sshfs-mountctl")
+            yield Rule()
+            yield Label("Also delete mount configs?", classes="field-label")
+            yield Label("  (~/.config/sshfs-mounts/)", classes="field-label")
+            with Horizontal(classes="buttons"):
+                yield Button("Keep configs",   variant="error",   id="uninstall_keep")
+                yield Button("Delete configs", variant="error",   id="uninstall_wipe")
+                yield Button("Cancel",         variant="default", id="cancel")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "uninstall_keep":
+            logger.debug("UninstallConfirmScreen: uninstall, keep configs")
+            self.dismiss("keep")
+        elif event.button.id == "uninstall_wipe":
+            logger.debug("UninstallConfirmScreen: uninstall, wipe configs")
+            self.dismiss("wipe")
+        else:
+            logger.debug("UninstallConfirmScreen: cancelled")
+            self.dismiss(None)
