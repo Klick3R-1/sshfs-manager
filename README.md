@@ -22,43 +22,50 @@ Built with Python and [Textual](https://github.com/Textualize/textual).
 ## Requirements
 
 - Linux with `systemd --user`
-- Python 3.10+
-- `textual` Python package
 - `sshfs` and `fuse3` / `fusermount3`
 
-### Ubuntu / Debian
-
 ```bash
+# Ubuntu / Debian
 sudo apt install sshfs fuse3
-pip install --user textual
-```
 
-### Arch Linux
-
-```bash
+# Arch Linux
 sudo pacman -S sshfs fuse3
-pip install --user textual
 ```
 
 ## Installation
 
-### One-liner
+There are three ways to install. The one-liner and manual methods are fully self-contained — no further steps needed inside the app. The binary method requires one extra step.
+
+### Option 1 — One-liner (recommended)
 
 ```bash
 curl -fsSL https://klick3r.com/sshfs-manager | bash
 ```
 
-> **Always inspect scripts before piping to bash.** You can review the bootstrap script first with `curl -fsSL https://klick3r.com/sshfs-manager | less` before running it.
+Clones the repo, installs `textual` if missing, copies the package, writes the launcher to `~/.bin/sshfs-mountctl`, and sets up all systemd infrastructure. Re-running updates to the latest version.
 
-This clones the repo to `~/.local/share/sshfs-mountctl`, installs the package to `~/.local/lib/sshfs-mountctl`, writes the launcher to `~/.bin/sshfs-mountctl`, and sets up the systemd infrastructure.
+> **Always inspect scripts before piping to bash.**
+> Preview first: `curl -fsSL https://klick3r.com/sshfs-manager | less`
 
-Re-running the one-liner updates to the latest version.
+After install, reload your shell or run `source ~/.profile`, then launch with `sshfs-mountctl`.
 
-### Manual
+### Option 2 — Binary release
+
+Download the latest `sshfs-mountctl` binary from the [Releases](https://github.com/Klick3r-1/sshfs-manager/releases) page.
+
+```bash
+chmod +x sshfs-mountctl
+./sshfs-mountctl
+```
+
+The binary bundles Python and all dependencies — no Python or `textual` install needed. **After launching, press Install from the menu** to set up the systemd watchdog service and required directories.
+
+### Option 3 — Manual
 
 ```bash
 git clone https://github.com/Klick3r-1/sshfs-manager ~/sshfs-manager
 cd ~/sshfs-manager
+pip install --user textual
 bash setup.sh
 source ~/.profile
 ```
