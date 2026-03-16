@@ -1,3 +1,5 @@
+![sshfs-mountctl main window](sshfs-mainWindow.png)
+
 # sshfs-mountctl
 
 > sshfs-mountctl started as a simple bash script that I used constantly — it was janky and ugly but it worked. I have since migrated it to Python with a nice-looking TUI and it has been really useful for me, as I mount and unmount remote folders constantly in my work and lab tasks. Hope it makes things simpler for someone else as well.
