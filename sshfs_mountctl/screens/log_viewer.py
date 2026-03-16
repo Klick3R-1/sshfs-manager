@@ -11,7 +11,7 @@ from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Label, Log
 
 from ..logging_ import logger
-from ..system import unit_for
+from ..system import unit_for, _clean_env
 
 
 class LogViewerScreen(Screen):
@@ -103,7 +103,7 @@ class LogViewerScreen(Screen):
         ]
         logger.debug("LogViewerScreen._fetch_static: cmd=%r", cmd)
         try:
-            r = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=10, env=_clean_env())
             lines = r.stdout.splitlines() or ["(no log entries)"]
             logger.debug("LogViewerScreen._fetch_static: %d lines, rc=%d", len(lines), r.returncode)
         except Exception as exc:
@@ -139,7 +139,7 @@ class LogViewerScreen(Screen):
         try:
             self._proc = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                text=True, bufsize=1,
+                text=True, bufsize=1, env=_clean_env(),
             )
             for line in self._proc.stdout:  # type: ignore[union-attr]
                 if self._stop.is_set():
