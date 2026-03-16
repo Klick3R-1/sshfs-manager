@@ -167,6 +167,7 @@ class InstallScreen(Screen):
                         f"sudo mkdir -p {mount_root} && "
                         f"sudo chown {user}:{user} {mount_root} && "
                         f"sudo chmod 755 {mount_root} && "
+                        f"sudo -k && "
                         f"echo 'Done!' || echo 'Something went wrong.'; "
                         f"read -rp 'Press Enter to close…'"
                     )
@@ -251,6 +252,7 @@ class InstallScreen(Screen):
                     shell_cmd = (
                         f"echo 'Removing {mount_root} — sudo password required' && "
                         f"sudo rmdir {mount_root} && "
+                        f"sudo -k && "
                         f"echo 'Done!' || echo 'Could not remove {mount_root} (may not be empty).'; "
                         f"read -rp 'Press Enter to close…'"
                     )
