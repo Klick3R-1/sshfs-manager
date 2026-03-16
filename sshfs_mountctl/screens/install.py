@@ -248,14 +248,18 @@ class InstallScreen(Screen):
                     except OSError:
                         log(f"  skipped: {mount_root}  (not empty)")
                 else:
-                    r = subprocess.run(
-                        ["sudo", "rmdir", str(mount_root)],
-                        capture_output=True, text=True, env=_clean_env(),
+                    shell_cmd = (
+                        f"echo 'Removing {mount_root} — sudo password required' && "
+                        f"sudo rmdir {mount_root} && "
+                        f"echo 'Done!' || echo 'Could not remove {mount_root} (may not be empty).'; "
+                        f"read -rp 'Press Enter to close…'"
                     )
-                    if r.returncode == 0:
-                        log(f"  removed: {mount_root}")
+                    log(f"  Opening terminal to remove {mount_root}…")
+                    _sudo_in_terminal(shell_cmd)
+                    if mount_root.exists():
+                        log(f"  skipped: {mount_root}  (not empty or sudo cancelled)")
                     else:
-                        log(f"  skipped: {mount_root}  (not empty or sudo required)")
+                        log(f"  removed: {mount_root}")
 
             log("")
             log("Uninstall complete. Closing…")
