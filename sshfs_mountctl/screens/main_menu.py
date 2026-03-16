@@ -23,7 +23,7 @@ from ..system import (
     unit_for,
 )
 from .add_mount import AddMountScreen
-from .confirm import BulkRemoveConfirmScreen, RemoveConfirmScreen
+from .confirm import BulkRemoveConfirmScreen
 from .install import InstallScreen
 from .log_viewer import LogViewerScreen
 from .selector import MountSelectorScreen

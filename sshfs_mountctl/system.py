@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import pwd
 import shlex
 import shutil
 import subprocess

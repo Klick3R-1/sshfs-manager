@@ -144,6 +144,9 @@ class AddMountScreen(Screen):
             self.query_one("#f_remote", Input).focus()
         else:
             self.query_one("#f_name", Input).focus()
+        # Hide healthcheck group if healthcheck is disabled
+        hc_on = self.query_one("#f_hc_enabled", Switch).value
+        self.query_one("#hc_group").display = hc_on
         # TCP port field hidden unless TCP mode is on
         tcp_on = self._source.healthcheck_mode == "tcp" if self._source else False
         self.query_one("#f_hc_port_group").display = tcp_on

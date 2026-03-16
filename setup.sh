@@ -55,6 +55,7 @@ if [[ -f "$SETTINGS_CONF" ]]; then
   MOUNT_ROOT="${MOUNT_ROOT:-/sshfs}"
   LOCAL_LINK_DIR="${LOCAL_LINK_DIR:-${HOME}/Mounts}"
 fi
+LOCAL_LINK_DIR="${LOCAL_LINK_DIR:-$MOUNTS_DIR}"
 
 if [[ -t 0 ]]; then
   echo "Configure paths  (press Enter to accept the default)"
@@ -63,8 +64,8 @@ if [[ -t 0 ]]; then
   read -rp "  Mount root  [${MOUNT_ROOT}]: " input_mount_root
   [[ -n "$input_mount_root" ]] && MOUNT_ROOT="$input_mount_root"
 
-  read -rp "  Symlink folder  [${MOUNTS_DIR}]: " input_link_dir
-  [[ -n "$input_link_dir" ]] && MOUNTS_DIR="$input_link_dir"
+  read -rp "  Symlink folder  [${LOCAL_LINK_DIR}]: " input_link_dir
+  [[ -n "$input_link_dir" ]] && LOCAL_LINK_DIR="$input_link_dir"
 
   echo ""
 else
@@ -74,14 +75,14 @@ fi
 # ── Directories ──────────────────────────────────────────────────────────────
 
 info "Creating directories…"
-mkdir -p "$BIN_DIR" "$LIB_DIR" "$CFG_DIR" "$SYSTEMD_DIR" "$MOUNTS_DIR"
-ok "~/.bin, ~/.local/lib/sshfs-mountctl, ~/.config/sshfs-mounts, $MOUNTS_DIR"
+mkdir -p "$BIN_DIR" "$LIB_DIR" "$CFG_DIR" "$SYSTEMD_DIR" "$LOCAL_LINK_DIR"
+ok "~/.bin, ~/.local/lib/sshfs-mountctl, ~/.config/sshfs-mounts, $LOCAL_LINK_DIR"
 
 # Write settings.conf so the TUI and watchdog pick up the chosen paths
 info "Writing settings.conf…"
 mkdir -p "$CFG_DIR"
 cat > "$SETTINGS_CONF" <<EOF
-LOCAL_LINK_DIR="${MOUNTS_DIR}"
+LOCAL_LINK_DIR="${LOCAL_LINK_DIR}"
 MOUNT_ROOT="${MOUNT_ROOT}"
 NOTIFICATIONS_ENABLED=0
 EOF
