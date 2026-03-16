@@ -20,6 +20,17 @@ from .logging_ import logger
 from .models import MountConfig, MountStatus
 
 
+def _clean_env() -> dict:
+    """Restore LD_LIBRARY_PATH for subprocess calls when running as a PyInstaller bundle."""
+    env = os.environ.copy()
+    orig = env.pop("LD_LIBRARY_PATH_ORIG", None)
+    if orig is not None:
+        env["LD_LIBRARY_PATH"] = orig
+    else:
+        env.pop("LD_LIBRARY_PATH", None)
+    return env
+
+
 # ── Settings ─────────────────────────────────────────────────────────────────────
 
 SETTINGS_FILE = MOUNTS_DIR / "settings.conf"
@@ -160,7 +171,7 @@ def mp_for(name: str) -> Path:
 def systemctl_user(*args: str) -> subprocess.CompletedProcess:
     cmd = ["systemctl", "--user", *args]
     logger.debug("run: %s", " ".join(cmd))
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    r = subprocess.run(cmd, capture_output=True, text=True, env=_clean_env())
     logger.debug("  → rc=%d stdout=%r stderr=%r",
                  r.returncode, r.stdout.strip(), r.stderr.strip())
     return r
@@ -176,7 +187,7 @@ def reload_user_daemon() -> None:
 def is_mounted(mountpoint: str) -> bool:
     cmd = ["/usr/bin/findmnt", "-rn", "-M", mountpoint, "-o", "FSTYPE"]
     logger.debug("run: %s", " ".join(cmd))
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    r = subprocess.run(cmd, capture_output=True, text=True, env=_clean_env())
     fstype = r.stdout.strip()
     result = bool(fstype) and fstype.startswith("fuse")
     logger.debug("  → fstype=%r  mounted=%s", fstype, result)
@@ -188,14 +199,14 @@ def unmount(mountpoint: str) -> bool:
     for flags in ["-u", "-uz"]:
         cmd = ["/usr/bin/fusermount3", flags, mountpoint]
         logger.debug("  run: %s", " ".join(cmd))
-        r = subprocess.run(cmd, capture_output=True)
+        r = subprocess.run(cmd, capture_output=True, env=_clean_env())
         logger.debug("  → rc=%d", r.returncode)
         if not is_mounted(mountpoint):
             logger.debug("  → unmounted with fusermount3 %s", flags)
             return True
     cmd = ["/usr/bin/umount", "-l", mountpoint]
     logger.debug("  run (last resort): %s", " ".join(cmd))
-    subprocess.run(cmd, capture_output=True)
+    subprocess.run(cmd, capture_output=True, env=_clean_env())
     result = not is_mounted(mountpoint)
     logger.debug("  → unmount result: %s", result)
     return result
@@ -373,7 +384,7 @@ def test_ssh_connection(host: str, timeout: int = 5) -> tuple[bool, str]:
         host, "true",
     ]
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 5)
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 5, env=_clean_env())
         if r.returncode == 0:
             logger.debug("  → connected ok")
             return True, f"Connected to {host}"
