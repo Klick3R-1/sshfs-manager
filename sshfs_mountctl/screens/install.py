@@ -163,12 +163,22 @@ class InstallScreen(Screen):
                 else:
                     user = pwd.getpwuid(os.getuid()).pw_name
                     shell_cmd = (
-                        f"echo 'Creating {mount_root} — sudo password required' && "
+                        f"echo 'sshfs-mountctl needs to create {mount_root}' && "
+                        f"echo '' && "
+                        f"echo 'Commands that will run:' && "
+                        f"echo '  sudo mkdir -p {mount_root}' && "
+                        f"echo '  sudo chown {user}:{user} {mount_root}' && "
+                        f"echo '  sudo chmod 755 {mount_root}' && "
+                        f"echo '' && "
+                        f"echo 'Press Ctrl+C to cancel — you can create the folder manually instead:' && "
+                        f"echo '  sudo mkdir -p {mount_root} && sudo chown $(id -un) {mount_root} && sudo chmod 755 {mount_root}' && "
+                        f"echo '  Then re-open Install to complete setup.' && "
+                        f"echo '' && "
                         f"sudo mkdir -p {mount_root} && "
                         f"sudo chown {user}:{user} {mount_root} && "
                         f"sudo chmod 755 {mount_root} && "
                         f"sudo -k && "
-                        f"echo 'Done!' || echo 'Something went wrong.'; "
+                        f"echo '' && echo 'Done!' || echo 'Cancelled or something went wrong.'; "
                         f"read -rp 'Press Enter to close…'"
                     )
                     log(f"  Opening terminal to create {mount_root}…")
@@ -250,10 +260,17 @@ class InstallScreen(Screen):
                         log(f"  skipped: {mount_root}  (not empty)")
                 else:
                     shell_cmd = (
-                        f"echo 'Removing {mount_root} — sudo password required' && "
+                        f"echo 'sshfs-mountctl needs to remove {mount_root}' && "
+                        f"echo '' && "
+                        f"echo 'Command that will run:' && "
+                        f"echo '  sudo rmdir {mount_root}' && "
+                        f"echo '' && "
+                        f"echo 'Press Ctrl+C to cancel — you can remove the folder manually instead:' && "
+                        f"echo '  sudo rmdir {mount_root}' && "
+                        f"echo '' && "
                         f"sudo rmdir {mount_root} && "
                         f"sudo -k && "
-                        f"echo 'Done!' || echo 'Could not remove {mount_root} (may not be empty).'; "
+                        f"echo '' && echo 'Done!' || echo 'Cancelled or folder not empty — you can remove it manually.'; "
                         f"read -rp 'Press Enter to close…'"
                     )
                     log(f"  Opening terminal to remove {mount_root}…")
