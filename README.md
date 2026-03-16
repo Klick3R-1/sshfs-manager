@@ -45,10 +45,10 @@ pip install --user textual
 ### One-liner
 
 ```bash
-curl -fsSL https://klick3r.com/sshfs-mountctl | bash
+curl -fsSL https://klick3r.com/sshfs-manager | bash
 ```
 
-> **Always inspect scripts before piping to bash.** You can review the bootstrap script first with `curl -fsSL https://klick3r.com/sshfs-mountctl | less` before running it.
+> **Always inspect scripts before piping to bash.** You can review the bootstrap script first with `curl -fsSL https://klick3r.com/sshfs-manager | less` before running it.
 
 This clones the repo to `~/.local/share/sshfs-mountctl`, installs the package to `~/.local/lib/sshfs-mountctl`, writes the launcher to `~/.bin/sshfs-mountctl`, and sets up the systemd infrastructure.
 
