@@ -187,6 +187,26 @@ fusermount3 -uz /path/to/mount
 
 Or use **View logs** in the TUI to tail logs directly.
 
+## Roadmap
+
+### Planned
+- **Click row to edit** — click a mount in the table to open its config directly
+- **Export / import configs** — backup and restore all mount configs as a single archive
+- **CLI flags** — `--list` / `--status` to print mount status without the TUI; `--mount` / `--unmount` / `--mount-group` / `--unmount-group` for scripting
+- **Changelog modal** — show release notes once when a new version is detected
+- **Mount groups** — tag mounts (e.g. "work", "media") and enable/disable the whole group at once
+- **Auto-reconnect indicator** — distinguish "service active, waiting to reconnect" from "mounted and healthy" in the status table
+- **Post-connect / pre-disconnect hooks** — per-mount `ON_CONNECT` / `ON_DISCONNECT` shell commands in the config, fired by the watchdog
+
+### Thinking about it
+- **SSH key setup** — a guided `ssh-copy-id` flow inside the app
+
+  This one sits on the backburner deliberately. SSH key management is a sensitive security operation, and there is real value in users understanding what they are doing when they set it up — not just clicking through a wizard. Good security hygiene means knowing the tools, not just trusting them.
+
+  That is also why sshfs-mountctl intentionally has no password support: storing SSH credentials would make the tool responsible for securing them, which is a responsibility that does not belong here. The right place for key management is the user, their terminal, and `ssh-keygen` / `ssh-copy-id`.
+
+  Until I can come up with a secure and transparent way to both generate keys and ensure they are stored safely — with the user fully understanding what is happening at each step — this feature will intentionally stay hanging.
+
 ## Version history
 
 ### v1.0.1 (current)
