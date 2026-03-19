@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import json
 import os
 import shlex
 import shutil
 import subprocess
+import urllib.request
 from pathlib import Path
 
 from .constants import (
     EDITOR_CANDIDATES,
+    GITHUB_RELEASES_URL,
+    UPDATE_CACHE_FILE,
     LOCAL_LINK_DIR,
     MOUNT_ROOT,
     MOUNTS_DIR,
@@ -510,3 +514,34 @@ def ensure_bin_in_path() -> list[str]:
 
     logger.debug("ensure_bin_in_path: modified=%s", modified)
     return modified
+
+
+def check_latest_version(force: bool = False) -> str | None:
+    """Return latest release version from GitHub, using a once-per-day cache.
+
+    Returns a version string (e.g. '1.0.2') or None on failure / cache miss.
+    Pass force=True to bypass the cache and always fetch from GitHub.
+    """
+    import time
+
+    try:
+        now = time.time()
+        if not force and UPDATE_CACHE_FILE.exists():
+            cached = json.loads(UPDATE_CACHE_FILE.read_text())
+            if now - cached.get("ts", 0) < 86400:
+                logger.debug("check_latest_version: using cache (%s)", cached.get("version"))
+                return cached.get("version")
+
+        req = urllib.request.Request(
+            GITHUB_RELEASES_URL, headers={"User-Agent": "sshfs-mountctl"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+        version = data.get("tag_name", "").lstrip("v") or None
+        UPDATE_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        UPDATE_CACHE_FILE.write_text(json.dumps({"ts": now, "version": version}))
+        logger.debug("check_latest_version: fetched %s", version)
+        return version
+    except Exception as exc:
+        logger.debug("check_latest_version: %s", exc)
+    return None

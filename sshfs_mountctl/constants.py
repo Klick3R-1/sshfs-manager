@@ -19,6 +19,9 @@ LOG_FILE       = HOME / ".local" / "state" / "sshfs-mountctl" / "debug.log"
 
 EDITOR_CANDIDATES = ["micro", "nano", "vim", "vi", "nvim", "emacs", "hx"]
 
+GITHUB_RELEASES_URL = "https://api.github.com/repos/Klick3r-1/sshfs-manager/releases/latest"
+UPDATE_CACHE_FILE   = HOME / ".local" / "state" / "sshfs-mountctl" / "update_check.json"
+
 UNIT_TEMPLATE_CONTENT = """\
 [Unit]
 Description=SSHFS watchdog mount for %i

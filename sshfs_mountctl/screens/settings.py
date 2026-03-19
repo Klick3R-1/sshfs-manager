@@ -11,7 +11,9 @@ from textual.widgets import Button, Footer, Header, Input, Label, Switch
 from textual import work
 
 from ..logging_ import logger
+from .. import __version__
 from ..system import (
+    check_latest_version,
     load_settings,
     migrate_link_dir,
     migrate_mount_root,
@@ -38,6 +40,8 @@ class SettingsScreen(Screen):
                         validators=[AbsolutePathValidator()])
             yield Label("Desktop notifications  (global on/off)", classes="field-label")
             yield Switch(value=s["NOTIFICATIONS_ENABLED"] == "1", id="f_notifications")
+            yield Label("Updates", classes="field-label")
+            yield Button("Check for update", id="btn_check_update")
         with Horizontal(classes="buttons"):
             yield Button("Save", variant="primary", id="btn_save")
             yield Button("Cancel", id="btn_cancel")
@@ -49,6 +53,8 @@ class SettingsScreen(Screen):
             self.app.pop_screen()
         elif event.button.id == "btn_save":
             self._save()
+        elif event.button.id == "btn_check_update":
+            self._do_check_update()
 
     def _save(self) -> None:
         new_link_dir = self.query_one("#f_link_dir", Input).value.strip()
@@ -85,6 +91,28 @@ class SettingsScreen(Screen):
             old_mount_root if mount_root_changed else None,
             new_mount_root if mount_root_changed else None,
         )
+
+    @work(thread=True)
+    def _do_check_update(self) -> None:
+        logger.debug("SettingsScreen._do_check_update")
+        latest = check_latest_version(force=True)
+        if latest is None:
+            self.app.call_from_thread(
+                self.app.notify, "Could not reach GitHub", severity="error"
+            )
+            return
+        def _ver(v: str) -> tuple:
+            try:
+                return tuple(int(x) for x in v.split("."))
+            except ValueError:
+                return (0,)
+        if _ver(latest) > _ver(__version__):
+            msg = f"Update available: v{latest}  (you have v{__version__})"
+            sev = "warning"
+        else:
+            msg = f"You're up to date  (v{__version__})"
+            sev = "information"
+        self.app.call_from_thread(self.app.notify, msg, severity=sev)
 
     @work(thread=True)
     def _migrate(

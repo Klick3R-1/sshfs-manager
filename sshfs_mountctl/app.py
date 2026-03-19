@@ -12,6 +12,7 @@ from .css import APP_CSS
 from .logging_ import logger
 from .screens import MainMenuScreen
 from .system import (
+    check_latest_version,
     conf_for,
     mp_for,
     reload_user_daemon,
@@ -24,16 +25,32 @@ from .system import (
 
 class SshfsMountCtl(App):
     CSS = APP_CSS
-    TITLE = f"SSHFS Mount Control  v{__version__}"
-    SUB_TITLE = "by Klick3R"
+    TITLE = "SSHFS Mount Control"
+    SUB_TITLE = f"by Klick3R  •  v{__version__}"
 
     def on_mount(self) -> None:
         logger.debug("SshfsMountCtl.on_mount")
         self.push_screen(MainMenuScreen())
+        self._check_for_update()
 
     def on_screen_resume(self) -> None:
         logger.debug("SshfsMountCtl.on_screen_resume: screen=%r",
                      type(self.screen).__name__)
+
+    @work(thread=True)
+    def _check_for_update(self) -> None:
+        latest = check_latest_version()
+        if latest is None:
+            return
+        def _ver(v: str) -> tuple:
+            try:
+                return tuple(int(x) for x in v.split("."))
+            except ValueError:
+                return (0,)
+        if _ver(latest) > _ver(__version__):
+            self.call_from_thread(
+                setattr, self, "sub_title", f"by Klick3R  •  v{__version__}  •  Update available: v{latest}"
+            )
 
     def handle_remove(self, names: list[str] | None) -> None:
         logger.debug("SshfsMountCtl.handle_remove: names=%r", names)
