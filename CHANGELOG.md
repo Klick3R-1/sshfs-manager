@@ -1,6 +1,13 @@
 # Changelog
 
-## v1.0.1 (current)
+## v1.0.2 (current)
+
+- Version moved to subtitle; title simplified to "SSHFS Mount Control"
+- Startup checks GitHub releases once per day and shows "Update available" in the subtitle if a newer version exists
+- Settings screen gains a "Check for update" button that force-fetches from GitHub and notifies with the result
+- Update check result cached to `~/.local/state/sshfs-mountctl/update_check.json` to avoid hitting GitHub on every launch
+
+## v1.0.1
 
 - Binary release via GitHub Actions (PyInstaller single-file, no Python required)
 - In-app uninstall with option to keep or wipe mount configs — also removes the mount root directory
