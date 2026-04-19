@@ -1,6 +1,14 @@
 # Changelog
 
-## v1.0.2 (current)
+## v1.1.0 (current)
+
+- Mount groups — assign mounts to named groups (e.g. "work", "media") and enable/disable the whole group at once
+- Group management in the app: create, rename, delete groups and manage which mounts belong to each
+- Groups section added to the main menu with Enable, Disable, Edit, and Members buttons
+- Command line flags for scripting without opening the app: `--enable`, `--disable`, `--list`, `--status`, `--enable-group`, `--disable-group`, `--list-group`, `--list-groups`
+- Mount table now shows the group for each mount
+
+## v1.0.2
 
 - Version moved to subtitle; title simplified to "SSHFS Mount Control"
 - Startup checks GitHub releases once per day and shows "Update available" in the subtitle if a newer version exists

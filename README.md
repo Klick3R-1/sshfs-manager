@@ -12,6 +12,8 @@ Built with Python and [Textual](https://github.com/Textualize/textual).
 
 - Add, edit, clone, remove, enable, disable, and restart SSHFS mounts
 - Bulk operations — multi-select mounts for enable / disable / restart / remove
+- Mount groups — organize mounts into named groups, enable/disable a whole group at once
+- Command line flags for scripting: `--enable`, `--disable`, `--list`, `--status`, and group variants
 - Browse the remote filesystem over SSH when setting a mount path
 - Test SSH connectivity before saving a mount
 - View and live-follow `journalctl` logs per mount
