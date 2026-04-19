@@ -194,9 +194,7 @@ Or use **View logs** in the TUI to tail logs directly.
 ### Planned
 - **Click row to edit** — click a mount in the table to open its config directly
 - **Export / import configs** — backup and restore all mount configs as a single archive
-- **CLI flags** — `--list` / `--status` to print mount status without the TUI; `--mount` / `--unmount` / `--mount-group` / `--unmount-group` for scripting
 - **Changelog modal** — show release notes once when a new version is detected
-- **Mount groups** — tag mounts (e.g. "work", "media") and enable/disable the whole group at once
 - **Auto-reconnect indicator** — distinguish "service active, waiting to reconnect" from "mounted and healthy" in the status table
 - **Post-connect / pre-disconnect hooks** — per-mount `ON_CONNECT` / `ON_DISCONNECT` shell commands in the config, fired by the watchdog
 
@@ -211,7 +209,15 @@ Or use **View logs** in the TUI to tail logs directly.
 
 ## Version history
 
-### v1.0.2 (current)
+### v1.1.0 (current)
+
+- Mount groups — assign mounts to named groups (e.g. "work", "media") and enable/disable the whole group at once
+- Group management in the app: create, rename, delete groups and manage which mounts belong to each
+- Groups section added to the main menu with Enable, Disable, Edit, and Members buttons
+- Command line flags for scripting without opening the app: `--enable`, `--disable`, `--list`, `--status`, `--enable-group`, `--disable-group`, `--list-group`, `--list-groups`
+- Mount table now shows the group for each mount
+
+### v1.0.2
 
 - Version moved to subtitle; title simplified to "SSHFS Mount Control"
 - Startup checks GitHub releases once per day and shows "Update available" in the subtitle if a newer version exists
