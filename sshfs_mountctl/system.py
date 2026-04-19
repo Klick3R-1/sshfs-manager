@@ -456,6 +456,16 @@ def remove_local_link(name: str, mountpoint: str = "") -> None:
     logger.debug("  → removed %s", link)
 
 
+def enable_mount_by_name(name: str) -> None:
+    logger.debug("enable_mount_by_name(%r)", name)
+    unit = unit_for(name)
+    cfg = parse_conf(conf_for(name))
+    Path(cfg.mountpoint).mkdir(parents=True, exist_ok=True)
+    ensure_local_link(name, cfg.mountpoint)
+    mp_for(name).write_text(cfg.mountpoint + "\n")
+    systemctl_user("enable", "--now", unit)
+
+
 def disable_mount_by_name(name: str) -> None:
     logger.debug("disable_mount_by_name(%r)", name)
     unit = unit_for(name)
