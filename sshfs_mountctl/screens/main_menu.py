@@ -13,12 +13,16 @@ from textual import work
 from ..logging_ import logger
 from ..system import (
     conf_for,
+    disable_group,
     disable_mount_by_name,
+    enable_group,
     get_mount_status,
     is_installed,
     list_mount_names,
+    list_mounts_by_group,
     parse_conf,
     reload_user_daemon,
+    set_mount_group,
     systemctl_user,
     unit_for,
 )
@@ -26,7 +30,7 @@ from .add_mount import AddMountScreen
 from .confirm import BulkRemoveConfirmScreen
 from .install import InstallScreen
 from .log_viewer import LogViewerScreen
-from .selector import MountSelectorScreen
+from .selector import GroupManagerScreen, GroupSelectorScreen, MountSelectorScreen
 from .settings import SettingsScreen
 
 
@@ -71,6 +75,11 @@ class MainMenuScreen(Screen):
                 yield MenuButton("Enable",   id="enable")
                 yield MenuButton("Disable",  id="disable")
                 yield MenuButton("Restart",  id="restart")
+                yield Label("Groups", classes="menu-section-label")
+                yield MenuButton("Enable",  id="enable_group")
+                yield MenuButton("Disable", id="disable_group")
+                yield MenuButton("Edit",    id="edit_groups")
+                yield MenuButton("Members", id="group_members")
                 yield Label("General", classes="menu-section-label")
                 yield MenuButton("View logs", id="logs")
                 yield MenuButton("Install",   id="install")
@@ -89,7 +98,7 @@ class MainMenuScreen(Screen):
         if not installed:
             self.app.push_screen(InstallScreen())
         self.query_one(DataTable).add_columns(
-            "NAME", "ENABLED", "MOUNTED", "SERVICE", "REMOTE"
+            "NAME", "ENABLED", "MOUNTED", "SERVICE", "GROUP", "REMOTE"
         )
         self._load_mounts()
         self.set_interval(5, self._load_mounts)
@@ -115,19 +124,19 @@ class MainMenuScreen(Screen):
             try:
                 cfg = parse_conf(conf_for(name))
                 st  = get_mount_status(name)
-                rows.append((name, st.enabled, st.mounted, st.service_state, cfg.remote))
+                rows.append((name, st.enabled, st.mounted, st.service_state, cfg.group, cfg.remote))
             except Exception as exc:
                 logger.debug("  error for %r: %s", name, exc)
-                rows.append((name, False, False, "unknown", "?"))
+                rows.append((name, False, False, "unknown", "", "?"))
 
         def update() -> None:
             table = self.query_one(DataTable)
             table.clear()
-            for name, enabled, mounted, state, remote in rows:
+            for name, enabled, mounted, state, group, remote in rows:
                 en = Text("yes", style="green") if enabled else Text("no",  style="yellow")
                 mo = Text("yes", style="green") if mounted else Text("no",  style="yellow")
                 st_style = {"active": "green", "failed": "red"}.get(state, "yellow")
-                table.add_row(name, en, mo, Text(state, style=st_style), remote)
+                table.add_row(name, en, mo, Text(state, style=st_style), group or "", remote)
 
         self.app.call_from_thread(update)
 
@@ -175,6 +184,23 @@ class MainMenuScreen(Screen):
                 MountSelectorScreen("Edit mount config"),
                 self._open_edit,
             )
+        elif item_id == "edit_groups":
+            self.app.push_screen(GroupManagerScreen(), lambda _: self._load_mounts())
+        elif item_id == "group_members":
+            self.app.push_screen(
+                GroupSelectorScreen("Select group to edit members"),
+                lambda group: self._open_members(group) if group else None,
+            )
+        elif item_id == "enable_group":
+            self.app.push_screen(
+                GroupSelectorScreen("Enable group"),
+                lambda group: self._enable_group(group) if group else None,
+            )
+        elif item_id == "disable_group":
+            self.app.push_screen(
+                GroupSelectorScreen("Disable group"),
+                lambda group: self._disable_group(group) if group else None,
+            )
         elif item_id == "logs":
             self.app.push_screen(
                 MountSelectorScreen("View logs"),
@@ -186,6 +212,14 @@ class MainMenuScreen(Screen):
             self.app.push_screen(SettingsScreen())
         elif item_id == "exit":
             self.app.exit()
+
+    def _open_members(self, group: str) -> None:
+        logger.debug("MainMenuScreen._open_members(%r)", group)
+        current = set(list_mounts_by_group(group))
+        self.app.push_screen(
+            MountSelectorScreen(f"Members of '{group}'", multi=True, pre_selected=current),
+            lambda names: self._save_members(group, current, set(names) if names else set()),
+        )
 
     def _open_edit(self, name: str | None) -> None:
         if not name:
@@ -233,6 +267,44 @@ class MainMenuScreen(Screen):
         label = ", ".join(names)
         self.app.call_from_thread(
             self.app.notify, f"Disabled: {label}", severity="information"
+        )
+        self.app.call_from_thread(self._load_mounts)
+
+    @work(thread=True)
+    def _save_members(self, group: str, old: set[str], new: set[str]) -> None:
+        logger.debug("MainMenuScreen._save_members: group=%r old=%s new=%s", group, old, new)
+        for name in new:
+            set_mount_group(name, group)
+        for name in old - new:
+            set_mount_group(name, "")
+        added = new - old
+        removed = old - new
+        parts = []
+        if added:
+            parts.append(f"added: {', '.join(sorted(added))}")
+        if removed:
+            parts.append(f"removed: {', '.join(sorted(removed))}")
+        msg = f"Group '{group}' updated" + (f" — {'; '.join(parts)}" if parts else "")
+        self.app.call_from_thread(self.app.notify, msg, severity="information")
+        self.app.call_from_thread(self._load_mounts)
+
+    @work(thread=True)
+    def _enable_group(self, group: str) -> None:
+        logger.debug("MainMenuScreen._enable_group(%r)", group)
+        names = enable_group(group)
+        label = ", ".join(names) if names else "(none)"
+        self.app.call_from_thread(
+            self.app.notify, f"Enabled group '{group}': {label}", severity="information"
+        )
+        self.app.call_from_thread(self._load_mounts)
+
+    @work(thread=True)
+    def _disable_group(self, group: str) -> None:
+        logger.debug("MainMenuScreen._disable_group(%r)", group)
+        names = disable_group(group)
+        label = ", ".join(names) if names else "(none)"
+        self.app.call_from_thread(
+            self.app.notify, f"Disabled group '{group}': {label}", severity="information"
         )
         self.app.call_from_thread(self._load_mounts)
 

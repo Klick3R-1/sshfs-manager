@@ -39,6 +39,26 @@ def main() -> None:
         metavar="NAME",
         help="print status for a single mount",
     )
+    parser.add_argument(
+        "--list-groups",
+        action="store_true",
+        help="print all group names",
+    )
+    parser.add_argument(
+        "--list-group",
+        metavar="GROUP",
+        help="print status for all mounts in a group",
+    )
+    parser.add_argument(
+        "--enable-group",
+        metavar="GROUP",
+        help="enable and start all mounts in a group",
+    )
+    parser.add_argument(
+        "--disable-group",
+        metavar="GROUP",
+        help="stop and disable all mounts in a group",
+    )
     args = parser.parse_args()
 
     setup_logging(args.debug)
@@ -55,6 +75,14 @@ def main() -> None:
         _cmd_list()
     elif args.status:
         _cmd_status(args.status)
+    elif args.list_groups:
+        _cmd_list_groups()
+    elif args.list_group:
+        _cmd_list_group(args.list_group)
+    elif args.enable_group:
+        _cmd_enable_group(args.enable_group)
+    elif args.disable_group:
+        _cmd_disable_group(args.disable_group)
     else:
         from .app import SshfsMountCtl
         SshfsMountCtl().run()
@@ -78,6 +106,59 @@ def _cmd_disable(name: str) -> None:
     print(f"disabled {name}")
 
 
+def _cmd_list_groups() -> None:
+    from .system import list_groups
+    groups = list_groups()
+    if not groups:
+        print("no groups configured")
+        return
+    for g in groups:
+        print(g)
+
+
+def _cmd_list_group(group: str) -> None:
+    from .system import get_mount_status, list_groups, list_mounts_by_group, parse_conf, conf_for
+    if group not in list_groups():
+        print(f"error: no group named '{group}'", file=sys.stderr)
+        sys.exit(1)
+    names = list_mounts_by_group(group)
+    if not names:
+        print(f"no mounts in group '{group}'")
+        return
+    col = max(len(n) for n in names)
+    for name in names:
+        st = get_mount_status(name)
+        try:
+            cfg = parse_conf(conf_for(name))
+            remote = cfg.remote
+        except Exception:
+            remote = "?"
+        enabled = "enabled " if st.enabled else "disabled"
+        service = st.service_state if st.service_state else "inactive"
+        mounted = "mounted  " if st.mounted else "-        "
+        print(f"{name:<{col}}  {enabled}  {service:<8}  {mounted}  {remote}")
+
+
+def _cmd_enable_group(group: str) -> None:
+    from .system import enable_group, list_groups
+    if group not in list_groups():
+        print(f"error: no group named '{group}'", file=sys.stderr)
+        sys.exit(1)
+    names = enable_group(group)
+    for name in names:
+        print(f"enabled {name}")
+
+
+def _cmd_disable_group(group: str) -> None:
+    from .system import disable_group, list_groups
+    if group not in list_groups():
+        print(f"error: no group named '{group}'", file=sys.stderr)
+        sys.exit(1)
+    names = disable_group(group)
+    for name in names:
+        print(f"disabled {name}")
+
+
 def _cmd_list() -> None:
     from .system import get_mount_status, list_mount_names, parse_conf, conf_for
     names = list_mount_names()
@@ -88,13 +169,16 @@ def _cmd_list() -> None:
     for name in names:
         st = get_mount_status(name)
         try:
-            remote = parse_conf(conf_for(name)).remote
+            cfg = parse_conf(conf_for(name))
+            remote = cfg.remote
+            group = cfg.group or "-"
         except Exception:
             remote = "?"
+            group = "-"
         enabled = "enabled " if st.enabled else "disabled"
         service = st.service_state if st.service_state else "inactive"
         mounted = "mounted  " if st.mounted else "-        "
-        print(f"{name:<{col}}  {enabled}  {service:<8}  {mounted}  {remote}")
+        print(f"{name:<{col}}  {enabled}  {service:<8}  {mounted}  {group:<12}  {remote}")
 
 
 def _cmd_status(name: str) -> None:
@@ -107,12 +191,15 @@ def _cmd_status(name: str) -> None:
         cfg = parse_conf(conf_for(name))
         remote = cfg.remote
         mountpoint = cfg.mountpoint
+        group = cfg.group or "-"
     except Exception:
         remote = "?"
         mountpoint = "?"
+        group = "-"
     print(f"name:       {name}")
     print(f"remote:     {remote}")
     print(f"mountpoint: {mountpoint}")
+    print(f"group:      {group}")
     print(f"enabled:    {'yes' if st.enabled else 'no'}")
     print(f"service:    {st.service_state or 'inactive'}")
     print(f"mounted:    {'yes' if st.mounted else 'no'}")

@@ -17,6 +17,7 @@ from ..system import (
     conf_for,
     ensure_local_link,
     get_mount_root,
+    list_groups,
     mp_for,
     parse_remote_host,
     reload_user_daemon,
@@ -51,6 +52,8 @@ class AddMountScreen(Screen):
         logger.debug("AddMountScreen.compose: clone=%s", s.name if s else None)
         hosts = ssh_config_hosts()
         host_suggester = SuggestFromList(hosts, case_sensitive=False) if hosts else None
+        groups = list_groups()
+        group_suggester = SuggestFromList(groups, case_sensitive=False) if groups else None
 
         yield Header()
         with VerticalScroll():
@@ -125,6 +128,12 @@ class AddMountScreen(Screen):
             yield Rule()
             yield Label("Desktop notifications", classes="field-label")
             yield Switch(value=s.notifications_enabled if s else False, id="f_notifications")
+
+            yield Rule()
+            yield Label("Group  (optional)", classes="field-label")
+            yield Input(value=s.group if s else "",
+                        placeholder="e.g. work, media, home",
+                        id="f_group", suggester=group_suggester)
 
             yield Rule()
             yield Label(
@@ -263,6 +272,7 @@ class AddMountScreen(Screen):
             healthcheck_fails=int(self._get("f_hc_fails") or "3"),
             ping_timeout=int(self._get("f_hc_ping") or "2"),
             notifications_enabled=self.query_one("#f_notifications", Switch).value,
+            group=self._get("f_group"),
         )
         action_after = self.query_one("#f_enable_after", Switch).value
         if self._edit_mode:

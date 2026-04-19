@@ -248,6 +248,7 @@ def parse_conf(path: Path) -> MountConfig:
         healthcheck_fails=int(data.get("HEALTHCHECK_FAILS", 3)),
         ping_timeout=int(data.get("PING_TIMEOUT", 2)),
         notifications_enabled=data.get("NOTIFICATIONS_ENABLED", "0") == "1",
+        group=data.get("GROUP", ""),
     )
     logger.debug("  → name=%r remote=%r mountpoint=%r hc_enabled=%s",
                  cfg.name, cfg.remote, cfg.mountpoint, cfg.healthcheck_enabled)
@@ -272,6 +273,8 @@ def write_conf(cfg: MountConfig) -> None:
         f.write(f'HEALTHCHECK_FAILS={cfg.healthcheck_fails}\n')
         f.write(f'PING_TIMEOUT={cfg.ping_timeout}\n')
         f.write(f'NOTIFICATIONS_ENABLED={1 if cfg.notifications_enabled else 0}\n')
+        if cfg.group:
+            f.write(f'GROUP="{cfg.group}"\n')
     logger.debug("  → written ok")
 
 
@@ -487,6 +490,81 @@ def disable_mount_by_name(name: str) -> None:
                     logger.debug("  rmdir failed: %s", exc)
     else:
         logger.debug("  no .mountpoint file found")
+
+
+def set_mount_group(name: str, group: str) -> None:
+    logger.debug("set_mount_group(%r, %r)", name, group)
+    cfg = parse_conf(conf_for(name))
+    cfg.group = group
+    write_conf(cfg)
+
+
+def rename_group(old_name: str, new_name: str) -> list[str]:
+    """Rename a group across all mounts. Returns names that were updated."""
+    updated = []
+    for name in list_mount_names():
+        try:
+            cfg = parse_conf(conf_for(name))
+            if cfg.group == old_name:
+                cfg.group = new_name
+                write_conf(cfg)
+                updated.append(name)
+        except Exception as exc:
+            logger.debug("  rename_group: error on %r: %s", name, exc)
+    return updated
+
+
+def delete_group(group_name: str) -> list[str]:
+    """Clear group from all mounts in a group. Returns names that were updated."""
+    updated = []
+    for name in list_mounts_by_group(group_name):
+        try:
+            set_mount_group(name, "")
+            updated.append(name)
+        except Exception as exc:
+            logger.debug("  delete_group: error on %r: %s", name, exc)
+    return updated
+
+
+def list_groups() -> list[str]:
+    """Return sorted unique group names across all configured mounts."""
+    groups: set[str] = set()
+    for name in list_mount_names():
+        try:
+            g = parse_conf(conf_for(name)).group
+            if g:
+                groups.add(g)
+        except Exception:
+            pass
+    return sorted(groups)
+
+
+def list_mounts_by_group(group: str) -> list[str]:
+    """Return mount names belonging to the given group."""
+    members = []
+    for name in list_mount_names():
+        try:
+            if parse_conf(conf_for(name)).group == group:
+                members.append(name)
+        except Exception:
+            pass
+    return members
+
+
+def enable_group(group: str) -> list[str]:
+    """Enable all mounts in a group. Returns names that were processed."""
+    names = list_mounts_by_group(group)
+    for name in names:
+        enable_mount_by_name(name)
+    return names
+
+
+def disable_group(group: str) -> list[str]:
+    """Disable all mounts in a group. Returns names that were processed."""
+    names = list_mounts_by_group(group)
+    for name in names:
+        disable_mount_by_name(name)
+    return names
 
 
 def ensure_bin_in_path() -> list[str]:

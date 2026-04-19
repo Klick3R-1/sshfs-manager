@@ -2,12 +2,53 @@
 
 from __future__ import annotations
 
+from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, Label, Rule
+from textual.widgets import Button, Input, Label, Rule
 
 from ..logging_ import logger
 from ..system import conf_for, mp_for, unit_for
+
+
+class TextInputScreen(ModalScreen):
+    """Single-field text input modal. Dismisses with the entered string or None on cancel."""
+
+    BINDINGS = [Binding("escape", "cancel", "Cancel")]
+
+    def __init__(self, title: str, placeholder: str = "", initial: str = "") -> None:
+        super().__init__()
+        self._title = title
+        self._placeholder = placeholder
+        self._initial = initial
+
+    def compose(self):
+        with Vertical():
+            yield Label(self._title)
+            yield Rule()
+            yield Input(value=self._initial, placeholder=self._placeholder, id="text-input")
+            with Horizontal(classes="buttons"):
+                yield Button("OK",     variant="primary", id="ok")
+                yield Button("Cancel", variant="default", id="cancel")
+
+    def on_mount(self) -> None:
+        self.query_one("#text-input", Input).focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "ok":
+            self._submit()
+        else:
+            self.dismiss(None)
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        self._submit()
+
+    def _submit(self) -> None:
+        value = self.query_one("#text-input", Input).value.strip()
+        self.dismiss(value if value else None)
+
+    def action_cancel(self) -> None:
+        self.dismiss(None)
 
 
 class RemoveConfirmScreen(ModalScreen):

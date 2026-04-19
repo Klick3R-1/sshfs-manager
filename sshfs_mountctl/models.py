@@ -20,6 +20,7 @@ class MountConfig:
     healthcheck_fails: int = 3
     ping_timeout: int = 2
     notifications_enabled: bool = False
+    group: str = ""
 
 
 @dataclass
