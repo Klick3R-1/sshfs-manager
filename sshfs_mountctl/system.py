@@ -419,14 +419,15 @@ def find_editor() -> str:
 # ── Install helpers ─────────────────────────────────────────────────────────────
 
 def is_installed() -> bool:
-    from .constants import UNIT_TEMPLATE, WATCHDOG_DST
+    from .constants import UNIT_TEMPLATE, WATCHDOG_DST, WATCHDOG_SYSTEM_DST
+    watchdog = WATCHDOG_SYSTEM_DST if WATCHDOG_SYSTEM_DST.exists() else WATCHDOG_DST
     checks = {
-        "unit_template": UNIT_TEMPLATE.exists(),
-        "watchdog_dst": WATCHDOG_DST.exists(),
-        "watchdog_executable": os.access(WATCHDOG_DST, os.X_OK),
+        "unit_template":       UNIT_TEMPLATE.exists(),
+        "watchdog_dst":        watchdog.exists(),
+        "watchdog_executable": os.access(watchdog, os.X_OK),
     }
     result = all(checks.values())
-    logger.debug("is_installed → %s  checks=%s", result, checks)
+    logger.debug("is_installed → %s  checks=%s  watchdog=%s", result, checks, watchdog)
     return result
 
 

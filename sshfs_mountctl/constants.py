@@ -9,7 +9,8 @@ HOME           = Path.home()
 MOUNTS_DIR     = HOME / ".config" / "sshfs-mounts"
 SYSTEMD_DIR    = HOME / ".config" / "systemd" / "user"
 UNIT_TEMPLATE  = SYSTEMD_DIR / "sshfs-watchdog@.service"
-WATCHDOG_DST   = HOME / ".bin" / "sshfs-watchdog.sh"
+WATCHDOG_DST        = HOME / ".bin" / "sshfs-watchdog.sh"
+WATCHDOG_SYSTEM_DST = Path("/usr/lib/sshfs-mountctl/sshfs-watchdog.sh")
 LOCAL_LINK_DIR = HOME / "Mounts"
 MOUNT_ROOT     = Path("/sshfs")
 # When running as a PyInstaller bundle, files are extracted to sys._MEIPASS
@@ -22,7 +23,15 @@ EDITOR_CANDIDATES = ["micro", "nano", "vim", "vi", "nvim", "emacs", "hx"]
 GITHUB_RELEASES_URL = "https://api.github.com/repos/Klick3r-1/sshfs-manager/releases/latest"
 UPDATE_CACHE_FILE   = HOME / ".local" / "state" / "sshfs-mountctl" / "update_check.json"
 
-UNIT_TEMPLATE_CONTENT = """\
+def _watchdog_path() -> str:
+    """Return the watchdog script path — system install takes priority over user install."""
+    if WATCHDOG_SYSTEM_DST.exists():
+        return str(WATCHDOG_SYSTEM_DST)
+    return "%h/.bin/sshfs-watchdog.sh"
+
+
+def make_unit_template_content() -> str:
+    return f"""\
 [Unit]
 Description=SSHFS watchdog mount for %i
 Wants=network-online.target
@@ -30,10 +39,13 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=%h/.bin/sshfs-watchdog.sh %h/.config/sshfs-mounts/%i.conf
+ExecStart={_watchdog_path()} %h/.config/sshfs-mounts/%i.conf
 Restart=always
 RestartSec=5
 
 [Install]
 WantedBy=default.target
 """
+
+
+UNIT_TEMPLATE_CONTENT = make_unit_template_content()
