@@ -63,6 +63,8 @@ class MainMenuScreen(Screen):
     def compose(self):
         logger.debug("MainMenuScreen.compose")
         yield Header(show_clock=True)
+        from ..constants import WATCHDOG_SYSTEM_DST
+        system_install = WATCHDOG_SYSTEM_DST.exists()
         installed = is_installed()
         status_text = "✓ Installed" if installed else "✗ Not installed"
         with Horizontal(id="main-layout"):
@@ -82,21 +84,25 @@ class MainMenuScreen(Screen):
                 yield MenuButton("Members", id="group_members")
                 yield Label("General", classes="menu-section-label")
                 yield MenuButton("View logs", id="logs")
-                yield MenuButton("Install",   id="install")
+                if not system_install:
+                    yield MenuButton("Install",   id="install")
                 yield MenuButton("Settings",  id="settings")
                 yield MenuButton("Exit",      id="exit")
-                yield Label(status_text, id="install-status")
+                if not system_install:
+                    yield Label(status_text, id="install-status")
             with Vertical(id="status-panel"):
                 yield DataTable(id="mount-table", cursor_type="none")
         yield Footer()
 
     def on_mount(self) -> None:
         logger.debug("MainMenuScreen.on_mount")
-        installed = is_installed()
-        colour = "green" if installed else "yellow"
-        self.query_one("#install-status", Label).styles.color = colour
-        if not installed:
-            self.app.push_screen(InstallScreen())
+        from ..constants import WATCHDOG_SYSTEM_DST
+        if not WATCHDOG_SYSTEM_DST.exists():
+            installed = is_installed()
+            colour = "green" if installed else "yellow"
+            self.query_one("#install-status", Label).styles.color = colour
+            if not installed:
+                self.app.push_screen(InstallScreen())
         self.query_one(DataTable).add_columns(
             "NAME", "ENABLED", "MOUNTED", "SERVICE", "GROUP", "REMOTE"
         )
@@ -105,12 +111,14 @@ class MainMenuScreen(Screen):
 
     def on_screen_resume(self) -> None:
         logger.debug("MainMenuScreen.on_screen_resume")
-        installed = is_installed()
-        status_text = "✓ Installed" if installed else "✗ Not installed"
-        colour = "green" if installed else "yellow"
-        label = self.query_one("#install-status", Label)
-        label.update(status_text)
-        label.styles.color = colour
+        from ..constants import WATCHDOG_SYSTEM_DST
+        if not WATCHDOG_SYSTEM_DST.exists():
+            installed = is_installed()
+            status_text = "✓ Installed" if installed else "✗ Not installed"
+            colour = "green" if installed else "yellow"
+            label = self.query_one("#install-status", Label)
+            label.update(status_text)
+            label.styles.color = colour
         self._load_mounts()
 
     def action_refresh_mounts(self) -> None:
