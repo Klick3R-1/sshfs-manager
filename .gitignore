@@ -34,3 +34,4 @@ CLAUDE.md
 bootstrap.sh
 info.md
 PKGBUILD
+sshfs-mountctl.install

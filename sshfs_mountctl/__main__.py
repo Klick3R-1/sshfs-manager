@@ -59,6 +59,11 @@ def main() -> None:
         metavar="GROUP",
         help="stop and disable all mounts in a group",
     )
+    parser.add_argument(
+        "--init",
+        action="store_true",
+        help="first-time setup: create directories, configure paths, write settings",
+    )
     args = parser.parse_args()
 
     setup_logging(args.debug)
@@ -67,7 +72,9 @@ def main() -> None:
         print(f"[debug] logging to {LOG_FILE}", file=sys.stderr)
 
     # Non-TUI paths
-    if args.enable:
+    if args.init:
+        _cmd_init()
+    elif args.enable:
         _cmd_enable(args.enable)
     elif args.disable:
         _cmd_disable(args.disable)
@@ -86,6 +93,83 @@ def main() -> None:
     else:
         from .app import SshfsMountCtl
         SshfsMountCtl().run()
+
+
+def _cmd_init() -> None:
+    import os
+    import subprocess
+    from pathlib import Path
+    from .constants import MOUNTS_DIR, SYSTEMD_DIR, UNIT_TEMPLATE, WATCHDOG_SYSTEM_DST, make_unit_template_content
+    from .system import SETTINGS_FILE, load_settings, reload_user_daemon
+
+    ok   = lambda msg: print(f"  \033[32m✓\033[0m  {msg}")
+    info = lambda msg: print(f"  \033[34m·\033[0m  {msg}")
+    warn = lambda msg: print(f"  \033[33m!\033[0m  {msg}")
+
+    print()
+    print("sshfs-mountctl setup")
+    print("====================")
+    print()
+
+    existing = load_settings()
+    current_root = existing.get("MOUNT_ROOT", "/sshfs")
+    current_link = existing.get("LOCAL_LINK_DIR", str(Path.home() / "Mounts"))
+
+    print("Configure paths  (press Enter to accept the default)")
+    print()
+    print("  Mount root: where SSHFS mountpoints are created, one subfolder per mount.")
+    print("  Kept outside your home directory so that shell startup and glob expansion")
+    print("  never touch a stale mount — a hung FUSE mount inside ~ can freeze a new")
+    print("  terminal for 10+ seconds while the kernel waits for it to time out.")
+    print()
+    mount_root = input(f"  Mount root      [{current_root}]: ").strip() or current_root
+    link_dir   = input(f"  Symlink folder  [{current_link}]: ").strip() or current_link
+    print()
+
+    # User directories
+    info("Creating user directories…")
+    for d in (MOUNTS_DIR, SYSTEMD_DIR, Path(link_dir)):
+        Path(d).mkdir(parents=True, exist_ok=True)
+    ok(f"~/.config/sshfs-mounts, ~/.config/systemd/user, {link_dir}")
+
+    # settings.conf
+    info("Writing settings.conf…")
+    SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    SETTINGS_FILE.write_text(
+        f'LOCAL_LINK_DIR="{link_dir}"\n'
+        f'MOUNT_ROOT="{mount_root}"\n'
+        f'NOTIFICATIONS_ENABLED={existing.get("NOTIFICATIONS_ENABLED", "0")}\n'
+    )
+    ok(str(SETTINGS_FILE))
+
+    # Systemd unit template — only write to ~/.config if not a system install
+    if not WATCHDOG_SYSTEM_DST.exists():
+        info("Writing systemd unit template…")
+        UNIT_TEMPLATE.write_text(make_unit_template_content())
+        ok(str(UNIT_TEMPLATE))
+
+    # Mount root
+    mount_root_path = Path(mount_root)
+    if not mount_root_path.exists():
+        info(f"Creating {mount_root} (requires sudo)…")
+        user = os.environ.get("USER", Path.home().name)
+        r1 = subprocess.run(["sudo", "mkdir", "-p", mount_root])
+        r2 = subprocess.run(["sudo", "chown", user, mount_root])
+        if r1.returncode == 0 and r2.returncode == 0:
+            ok(f"{mount_root} created")
+        else:
+            warn(f"Could not create {mount_root} — run manually: "
+                 f"sudo mkdir -p {mount_root} && sudo chown $USER {mount_root}")
+    else:
+        ok(f"{mount_root} already exists")
+
+    # Reload systemd
+    reload_user_daemon()
+    ok("systemd user daemon reloaded")
+
+    print()
+    print("Setup complete. Launch with:  sshfs-mountctl")
+    print()
 
 
 def _cmd_enable(name: str) -> None:

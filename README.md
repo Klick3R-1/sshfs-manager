@@ -209,7 +209,11 @@ Or use **View logs** in the TUI to tail logs directly.
 
 ## Version history
 
-### v1.1.1 (current)
+### v1.1.2 (current)
+
+- Add `--init` flag for first-time setup without opening the TUI — creates directories, prompts for mount root and symlink folder, writes settings, handles `/sshfs` creation with sudo
+
+### v1.1.1
 
 - AUR / system install support — Install button and status label are hidden when the watchdog is installed system-wide (e.g. via AUR package)
 
