@@ -209,7 +209,11 @@ Or use **View logs** in the TUI to tail logs directly.
 
 ## Version history
 
-### v1.1.0 (current)
+### v1.1.1 (current)
+
+- AUR / system install support — Install button and status label are hidden when the watchdog is installed system-wide (e.g. via AUR package)
+
+### v1.1.0
 
 - Mount groups — assign mounts to named groups (e.g. "work", "media") and enable/disable the whole group at once
 - Group management in the app: create, rename, delete groups and manage which mounts belong to each
