@@ -28,43 +28,38 @@ Built with Python and [Textual](https://github.com/Textualize/textual).
 - Linux with `systemd --user`
 - `sshfs` and `fuse3` / `fusermount3`
 
-```bash
-# Ubuntu / Debian
-sudo apt install sshfs fuse3
-
-# Arch Linux
-sudo pacman -S sshfs fuse3
-```
-
 ## Installation
 
-There are three ways to install. The one-liner and manual methods are fully self-contained — no further steps needed inside the app. The binary method requires one extra step.
+### Arch Linux
 
-### Option 1 — One-liner (recommended)
+Install from the AUR — dependencies are handled automatically:
+
+```bash
+yay -S sshfs-mountctl
+```
+
+Then run first-time setup:
+
+```bash
+sshfs-mountctl --init
+```
+
+This creates the required directories, writes your settings, and sets up `/sshfs` (the default mount root) with sudo.
+
+### Other Linux — one-liner
 
 ```bash
 curl -fsSL https://klick3r.com/sshfs-manager | bash
 ```
 
-Clones the repo, installs `textual` if missing, copies the package, writes the launcher to `~/.bin/sshfs-mountctl`, and sets up all systemd infrastructure. Re-running updates to the latest version.
+Installs `textual` if missing, copies the package, writes the launcher to `~/.bin/sshfs-mountctl`, and sets up all systemd infrastructure. Re-running updates to the latest version.
 
 > **Always inspect scripts before piping to bash.**
 > Preview first: `curl -fsSL https://klick3r.com/sshfs-manager | less`
 
 After install, reload your shell or run `source ~/.profile`, then launch with `sshfs-mountctl`.
 
-### Option 2 — Binary release
-
-Download the latest `sshfs-mountctl` binary from the [Releases](https://github.com/Klick3r-1/sshfs-manager/releases) page.
-
-```bash
-chmod +x sshfs-mountctl
-./sshfs-mountctl
-```
-
-The binary bundles Python and all dependencies — no Python or `textual` install needed. **On first launch the install prompt appears automatically** — follow it to set up the systemd watchdog service and required directories.
-
-### Option 3 — Manual
+### From source
 
 ```bash
 git clone https://github.com/Klick3r-1/sshfs-manager ~/sshfs-manager
@@ -74,34 +69,36 @@ bash setup.sh
 source ~/.profile
 ```
 
+### Binary release
+
+Download the latest `sshfs-mountctl` binary from the [Releases](https://github.com/Klick3r-1/sshfs-manager/releases) page — bundles Python and all dependencies, no install needed.
+
+```bash
+chmod +x sshfs-mountctl
+./sshfs-mountctl
+```
+
+On first launch the install prompt appears automatically.
+
 ## Uninstallation
 
-### Via the app
-
-Open the app, go to **Install → Uninstall**. You will be asked whether to keep or delete your mount configs. The app removes all systemd units, the watchdog script, the launcher, and the installed package, then exits.
-
-### Remove dependencies installed by the one-liner
-
-The one-liner may have installed `textual` via pip. To remove it:
+### AUR
 
 ```bash
-pip uninstall textual
+sudo pacman -R sshfs-mountctl
 ```
 
-To also remove `sshfs` and `fuse3`:
+This removes the package but leaves your mount configs at `~/.config/sshfs-mounts/` untouched.
 
-```bash
-# Ubuntu / Debian
-sudo apt remove sshfs fuse3
+### One-liner / from source
 
-# Arch Linux
-sudo pacman -R sshfs fuse3
-```
+Open the app and go to **Install → Uninstall**. You will be asked whether to keep or delete your mount configs. The app removes all systemd units, the watchdog script, the launcher, and the installed package, then exits.
 
 ## Usage
 
 ```bash
 sshfs-mountctl           # launch the TUI
+sshfs-mountctl --init    # first-time setup
 sshfs-mountctl --debug   # enable debug logging to ~/.local/state/sshfs-mountctl/debug.log
 ```
 
@@ -117,8 +114,22 @@ sshfs-mountctl --debug   # enable debug logging to ~/.local/state/sshfs-mountctl
 | Disable | Disable and stop a mount (supports multi-select) |
 | Restart | Restart a mount (supports multi-select) |
 | View logs | Tail `journalctl` logs for a mount |
-| Install | Install / repair systemd infrastructure |
 | Settings | Configure symlink folder, mount root, and global notifications |
+
+### CLI flags
+
+The tool can be scripted without opening the TUI:
+
+| Flag | Description |
+|------|-------------|
+| `--list` | List all mounts with status |
+| `--status NAME` | Show status for a single mount |
+| `--enable NAME` | Enable and start a mount |
+| `--disable NAME` | Stop and disable a mount |
+| `--list-groups` | List all group names |
+| `--list-group GROUP` | List mounts in a group with status |
+| `--enable-group GROUP` | Enable all mounts in a group |
+| `--disable-group GROUP` | Disable all mounts in a group |
 
 ## How it works
 
@@ -217,37 +228,4 @@ Or use **View logs** in the TUI to tail logs directly.
 
 - AUR / system install support — Install button and status label are hidden when the watchdog is installed system-wide (e.g. via AUR package)
 
-### v1.1.0
-
-- Mount groups — assign mounts to named groups (e.g. "work", "media") and enable/disable the whole group at once
-- Group management in the app: create, rename, delete groups and manage which mounts belong to each
-- Groups section added to the main menu with Enable, Disable, Edit, and Members buttons
-- Command line flags for scripting without opening the app: `--enable`, `--disable`, `--list`, `--status`, `--enable-group`, `--disable-group`, `--list-group`, `--list-groups`
-- Mount table now shows the group for each mount
-
-### v1.0.2
-
-- Version moved to subtitle; title simplified to "SSHFS Mount Control"
-- Startup checks GitHub releases once per day and shows "Update available" in the subtitle if a newer version exists
-- Settings screen gains a "Check for update" button that force-fetches from GitHub and notifies with the result
-- Update check result cached to `~/.local/state/sshfs-mountctl/update_check.json` to avoid hitting GitHub on every launch
-
-### v1.0.1
-
-- Binary release via GitHub Actions (PyInstaller single-file, no Python required)
-- In-app uninstall with option to keep or wipe mount configs — also removes the mount root directory
-- Install prompt auto-launches on first run when systemd infra is missing
-- Install screen path inputs update the preview list live as you type
-- setup.sh prompts for mount root and symlink folder during install (including via `curl | bash`), with descriptions of what each path is used for
-- When mount root is outside home, a terminal window opens for the sudo commands — shows exactly what will run, Ctrl+C to cancel and run manually instead; sudo session is revoked immediately after
-- Fixed: PyInstaller binary — entry point import error, LD_LIBRARY_PATH interference with systemd/journalctl, watchdog script not found in bundle
-- Fixed: `curl | bash` no longer breaks on path prompts in non-interactive shells
-- Fixed: settings file preserves unknown keys on save
-- Fixed: uninstall cleans up bootstrap git clone at `~/.local/share/sshfs-mountctl`
-- Fixed: install status label updates correctly after returning from install screen
-- Fixed: app exits automatically after successful uninstall
-- Fixed: Back button always shown after install errors
-
-### v1.0.0
-
-Built with Python and [Textual](https://github.com/Textualize/textual). Vibecoded with [Claude](https://claude.ai/code).
+See [CHANGELOG.md](CHANGELOG.md) for full history.
